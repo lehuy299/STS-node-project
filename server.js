@@ -10,7 +10,14 @@ const mongoConnectionString = process.env.MONGO_DB_CONNECTION_STRING || 'mongodb
 const { API_PORT } = process.env;
 const port = process.env.PORT || API_PORT;
 
-mongoose.connect(mongoConnectionString, {})
+mongoose
+	.connect(mongoConnectionString, {})
+	.then(() => console.log("Successfully connected to database"))
+	.catch(err => {
+		console.log("database connection failed. exiting now...");
+		console.error(err);
+		process.exit(1);
+	})
 
 app.use('/', express.static(path.join(__dirname, 'static')))
 app.use(bodyParser.json())
