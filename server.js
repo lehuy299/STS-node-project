@@ -5,10 +5,15 @@ const mongoose = require('mongoose')
 const User = require('./model/user')
 const bcrypt = require('bcrypt')
 const jwt = require('jsonwebtoken')
+const dotenv = require('dotenv')
+dotenv.config()
 
-const JWT_SECRET = 'sdjkfh8923yhjdksbfma@#*(&@*!^#&@bhjb2qiuhesdbhjdsfg839ujkdhfjk'
+const JWT_SECRET = process.env.JWT_SECRET;
+const mongoConnectionString = process.env.MONGO_DB_CONNECTION_STRING || 'mongodb://localhost:27017/login-app-db';
+const { API_PORT } = process.env;
+const port = process.env.PORT || API_PORT;
 
-mongoose.connect('mongodb://localhost:27017/login-app-db', {})
+mongoose.connect(mongoConnectionString, {})
 
 const app = express()
 app.use('/', express.static(path.join(__dirname, 'static')))
@@ -76,6 +81,6 @@ app.post('/api/register', async (req, res) => {
 	res.json({ status: 'ok' })
 })
 
-app.listen(9999, () => {
-	console.log('Server up at 9999')
+app.listen(port, () => {
+	console.log(`Server up at ${port}`)
 })
