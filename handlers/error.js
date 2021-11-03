@@ -1,10 +1,10 @@
-const registerDuplicate = (err) => {
-    if (err.code === 11000) {
-        // duplicate key
-        return res.json({ status: 'error', error: 'Username already in use' })
-    }
-    throw err
-}
+// const registerDuplicate = (error, res) => {
+//     if (error.code === 11000) {
+//         // duplicate key
+//         return res.json({ status: 'error', error: 'Username already in use' })
+//     }
+//     throw error
+// }
 
 const databaseConnectionFailed = (err) => {
     console.log("database connection failed. exiting now...");
@@ -14,5 +14,6 @@ const databaseConnectionFailed = (err) => {
 
 module.exports =
 {
-    registerDuplicate
+    //registerDuplicate,
+    databaseConnectionFailed
 }
