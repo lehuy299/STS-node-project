@@ -9,13 +9,21 @@ const app = express()
 const mongoConnectionString = process.env.MONGO_DB_CONNECTION_STRING || 'mongodb://localhost:27017/login-app-db';
 const { API_PORT } = process.env;
 const port = process.env.PORT || API_PORT;
+const cookieParser = require("cookie-parser");
+const errorHandler = require('./handlers/error.js')
 
-mongoose.connect(mongoConnectionString, {})
+mongoose
+	.connect(mongoConnectionString, {})
+	.then(() => console.log("Successfully connected to database"))
+	.catch(err => {
+		errorHandler.databaseConnectionFailed(err);
+	})
 
+app.use(cookieParser());
 app.use('/', express.static(path.join(__dirname, 'static')))
 app.use(bodyParser.json())
 
-app.use('/api', userRouter);
+app.use('/api/user', userRouter);
 
 app.listen(port, () => {
 	console.log(`Server up at ${port}`)

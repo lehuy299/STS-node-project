@@ -1,7 +1,8 @@
-const User = require('../model/user.js')
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
+const User = require('../model/user.js');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
+const errorHandler = require('./error.js');
 
 exports.login = async (req, res) => {
 	const { username, password } = req.body
@@ -22,8 +23,13 @@ exports.login = async (req, res) => {
 			JWT_SECRET
 		)
 
-		return res.json({ status: 'ok', data: token })
-	}
+        return res
+            .cookie("token", token, {
+            httpOnly: true,
+            //secure: process.env.NODE_ENV === "production",
+            })
+            .json({ status:'ok', message: "Logged in successfully 😊 👌" });
+    }
 
 	res.json({ status: 'error', error: 'Invalid username/password' })
 };
@@ -60,7 +66,20 @@ exports.register = async (req, res) => {
 			return res.json({ status: 'error', error: 'Username already in use' })
 		}
 		throw error
-	}
 
+		//errorHandler.registerDuplicate(error, res);
+	}
 	res.json({ status: 'ok' })
+}
+
+exports.welcome = (req, res) => {
+    res.send("Welcome!!!");
 };
+
+exports.logout = (req, res) => {
+	return res
+	  .clearCookie("token")
+	  .status(200)
+	  .json({ message: "Successfully logged out 😏 🍀" })
+};
+
