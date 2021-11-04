@@ -4,8 +4,31 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 const errorHandler = require('./error.js');
 
+exports.getRegister = (req, res) => {
+	res.render('pages/register');
+}
+
+exports.getLogin = (req, res) => {
+	res.render('pages/login');
+}
+
+exports.getProfile = (req, res) => {
+	res.render('pages/profile');
+}
+
+exports.getEdit = async (req, res) => {
+	const username = req.params.username;
+	const user = await User.findOne({ username: username }).lean();
+
+	
+	
+	res.render('pages/edit', { user: user });
+}
+
 exports.login = async (req, res) => {
+
 	const { username, password } = req.body
+	
 	const user = await User.findOne({ username }).lean()
 
 	if (!user) {
@@ -28,14 +51,14 @@ exports.login = async (req, res) => {
             httpOnly: true,
             //secure: process.env.NODE_ENV === "production",
             })
-            .json({ status:'ok', message: "Logged in successfully 😊 👌" });
+            .redirect('/api/user/profile/' + username)
     }
 
 	res.json({ status: 'error', error: 'Invalid username/password' })
 };
 
 exports.register = async (req, res) => {
-	const { username, password: plainTextPassword } = req.body
+	const { username, password: plainTextPassword, email, firstName, lastName, dateOfBirth } = req.body
 
 	if (!username || typeof username !== 'string') {
 		return res.json({ status: 'error', error: 'Invalid username' })
@@ -57,7 +80,11 @@ exports.register = async (req, res) => {
 	try {
 		const response = await User.create({
 			username,
-			password
+			password,
+			email,
+			firstName, 
+			lastName,
+			dateOfBirth
 		})
 		console.log('User created successfully: ', response)
 	} catch (error) {
@@ -66,14 +93,37 @@ exports.register = async (req, res) => {
 			return res.json({ status: 'error', error: 'Username already in use' })
 		}
 		throw error
-
-		//errorHandler.registerDuplicate(error, res);
 	}
-	res.json({ status: 'ok' })
+	res.redirect('/login');
 }
 
-exports.welcome = (req, res) => {
-    res.send("Welcome!!!");
+exports.update = async (req, res) => {
+	const { firstName, lastName, dateOfBirth } = req.body;
+	const username = req.params.username;
+
+	try {
+		const response = await User.updateOne(
+			{ username: username },
+			{
+				$set: {
+					firstName: firstName, 
+					lastName: lastName, 
+					dateOfBirth: dateOfBirth
+				}
+			}
+		)
+		console.log('User update successfully: ', response)
+	} catch (error) {
+		console.log(error);
+	}
+	res.redirect('/api/user/profile/' + username);
+}
+
+exports.profile = async (req, res) => {
+	const username = req.params.username;
+	const user = await User.findOne({ username: username }).lean();
+
+	res.render('pages/profile', { user: user });
 };
 
 exports.logout = (req, res) => {

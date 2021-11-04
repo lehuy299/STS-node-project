@@ -1,6 +1,4 @@
 const express = require('express')
-const path = require('path')
-const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
 dotenv.config()
@@ -18,12 +16,15 @@ mongoose
 	.catch(err => {
 		errorHandler.databaseConnectionFailed(err);
 	})
+app.set('view engine', 'ejs');
 
 app.use(cookieParser());
-app.use('/', express.static(path.join(__dirname, 'static')))
-app.use(bodyParser.json())
+app.use(express.urlencoded());
+app.use(express.json());
 
-app.use('/api/user', userRouter);
+app.use('/', userRouter);
+
+app.use(require('./middleware/error.js').validation);
 
 app.listen(port, () => {
 	console.log(`Server up at ${port}`)
