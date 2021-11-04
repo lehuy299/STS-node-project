@@ -1,7 +1,8 @@
-const User = require('../model/user.js')
-const bcrypt = require('bcrypt')
-const jwt = require('jsonwebtoken')
+const User = require('../model/user.js');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
+const errorHandler = require('./error.js');
 
 exports.login = async (req, res) => {
 	const { username, password } = req.body
@@ -55,11 +56,7 @@ exports.register = async (req, res) => {
 		})
 		console.log('User created successfully: ', response)
 	} catch (error) {
-		if (error.code === 11000) {
-			// duplicate key
-			return res.json({ status: 'error', error: 'Username already in use' })
-		}
-		throw error
+		errorHandler.registerDuplicate(error);
 	}
 
 	res.json({ status: 'ok' })
