@@ -12,11 +12,10 @@
             <div class="form-group">
                 <label>Username*</label>
                 <input class="form-control" type="text" placeholder="Username" name="username" required>
+                <% if (typeof error !== 'undefined') { %>
+                    <div class="alert-danger"><%= error %></div>
+                <% } %>
             </div>
-            <% if (typeof error !== 'undefined' && error.length > 0) { %>
-                <div class="alert-danger"><%= error %></div>
-            <% } %>
-            <div class="form-group">
                 <label>Password*</label>
                 <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password"
                     name="password" required>
@@ -56,9 +55,6 @@
                 elseif()
             }
             
-            function duplicateUsername() {
-
-            }
         </script>
 
         <div class="mt-2 text-center">
