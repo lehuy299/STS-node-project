@@ -2,7 +2,8 @@ const { validate, ValidationError, Joi } = require('express-validation')
 
 const validation = (err, req, res, next) => {
 	if (err instanceof ValidationError) {
-		return res.status(err.statusCode).json(err)
+		req.flash('validateErr', err.details.body[0].message)
+		return res.redirect('back');
 	}
 
 	return next(err);
@@ -10,5 +11,5 @@ const validation = (err, req, res, next) => {
 
 module.exports =
 {
-    validation,
+	validation
 }

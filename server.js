@@ -9,6 +9,8 @@ const { API_PORT } = process.env;
 const port = process.env.PORT || API_PORT;
 const cookieParser = require("cookie-parser");
 const errorHandler = require('./handlers/error.js')
+const session = require('express-session');
+const flash = require('express-flash');
 
 mongoose
 	.connect(mongoConnectionString, {})
@@ -16,11 +18,15 @@ mongoose
 	.catch(err => {
 		errorHandler.databaseConnectionFailed(err);
 	})
+
 app.set('view engine', 'ejs');
 
 app.use(cookieParser());
 app.use(express.urlencoded());
 app.use(express.json());
+
+app.use(session( {secret:'blablablablabla', resave: false, saveUninitialized: false} ));
+app.use(flash());
 
 app.use('/', userRouter);
 
