@@ -5,8 +5,7 @@ const userValidation = require('../validation/user.js')
 const { validate, ValidationError, Joi } = require('express-validation')
 const authorization = require("../middleware/auth.js")
 const multer = require('multer')
-const { storage } = require('../cloudinary')
-const upload = multer({ storage })
+const upload = multer({ dest: 'uploads/' })
 
 userRouter.get('/', userHandler.home)
 
@@ -17,6 +16,8 @@ userRouter.get('/login', userHandler.getLogin)
 userRouter.get('/register', userHandler.getRegister)
 
 userRouter.get('/profile', userHandler.getProfile)
+
+userRouter.get('/api/user/images/:key', userHandler.getImage)
 
 userRouter.get('/edit/:username', authorization, userHandler.getEdit)
 
