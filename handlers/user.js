@@ -2,7 +2,10 @@ const User = require('../model/user.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
-
+const { uploadFile, getFileStream } = require('../s3/s3');
+const fs = require('fs');
+const util = require('util');
+const unlinkFile = util.promisify(fs.unlink);
 
 exports.getRegister = (req, res) => {
 	res.render('pages/register');
@@ -25,6 +28,14 @@ exports.getEdit = async (req, res) => {
 
 exports.home = (req, res) => {
 	res.render('pages/home');
+}
+
+exports.getImage = (req, res) => {
+	console.log(req.params)
+	const key = req.params.key
+	const readStream = getFileStream(key)
+
+	readStream.pipe(res)
 }
 
 exports.login = async (req, res) => {
@@ -71,12 +82,17 @@ exports.register = async (req, res) => {
 		return res.redirect('/register');
 	}
 
-	const { path, filename } = req.file || {};
+	const file = req.file
+
+	const result = await uploadFile(file)
+	await unlinkFile(file.path)
+
+	const avatarUrl = result.Key
 
 	const response = await User.create({
 		username,
 		password,
-		avatar: { path: path, filename: filename },
+		avatarUrl,
 		email,
 		firstName,
 		lastName,
@@ -91,11 +107,15 @@ exports.update = async (req, res) => {
 	const { email, firstName, lastName, dateOfBirth } = req.body;
 	const username = req.params.username;
 	const user = await User.findOne({ username: username }).lean();
-	let { path, filename } = user.avatar[0];
+	let avatarUrl = user.avatarUrl;
 
-	if(req.file){ 
-		path = req.file.path;
-		filename = req.file.filename;
+	if (req.file) {
+		const file = req.file
+
+		const result = await uploadFile(file)
+		await unlinkFile(file.path)
+
+		avatarUrl = result.Key
 	}
 
 	try {
@@ -104,7 +124,7 @@ exports.update = async (req, res) => {
 			{
 				$set: {
 					email: email,
-					avatar: { path: path, filename: filename },
+					avatarUrl: avatarUrl,
 					firstName: firstName,
 					lastName: lastName,
 					dateOfBirth: dateOfBirth
