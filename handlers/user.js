@@ -3,6 +3,7 @@ const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
 
+
 exports.getRegister = (req, res) => {
 	res.render('pages/register');
 }
@@ -33,7 +34,8 @@ exports.login = async (req, res) => {
 	const user = await User.findOne({ username }).lean()
 
 	if (!user) {
-		return res.json({ status: 'error', error: 'Invalid username/password' })
+		req.flash('invalidUserErr', "Invalid username/password");
+		return res.redirect('/login');
 	}
 
 	if (await bcrypt.compare(password, user.password)) {
@@ -53,7 +55,8 @@ exports.login = async (req, res) => {
 			.redirect('/api/user/profile/' + username)
 	}
 
-	res.json({ status: 'error', error: 'Invalid username/password' })
+	req.flash('invalidUserErr', "Invalid username/password");
+	return res.redirect('/login');
 };
 
 exports.register = async (req, res) => {
@@ -63,7 +66,10 @@ exports.register = async (req, res) => {
 
 	const isDuplicated = await User.findOne({ username: username })
 
-	if (isDuplicated) return res.render('pages/register', { error: "Username has been created" })
+	if (isDuplicated) {
+		req.flash('userDupErr', "Username has been created");
+		return res.redirect('/register');
+	}
 
 	const { path, filename } = req.file || {};
 
@@ -77,14 +83,20 @@ exports.register = async (req, res) => {
 		dateOfBirth
 	})
 	console.log('User created successfully: ', response)
-
+	req.flash('signupSucessMsg', "Register successfully. Now please login");
 	res.redirect('/login');
 }
 
 exports.update = async (req, res) => {
 	const { email, firstName, lastName, dateOfBirth } = req.body;
 	const username = req.params.username;
-	const { path, filename } = req.file || {};
+	const user = await User.findOne({ username: username }).lean();
+	let { path, filename } = user.avatar[0];
+
+	if(req.file){ 
+		path = req.file.path;
+		filename = req.file.filename;
+	}
 
 	try {
 		const response = await User.updateOne(
@@ -117,6 +129,7 @@ exports.profile = async (req, res) => {
 };
 
 exports.logout = (req, res) => {
+	req.flash('logoutMsg', "Successfully Logged Out");
 	return res
 		.clearCookie("token")
 		.status(200)
