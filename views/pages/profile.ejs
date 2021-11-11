@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../partials/head'); %>
+</head>
+
+<body class="container">
+
+    <main>
+        <div class="jumbotron">
+            <h1>Profile</h1>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item">
+                    <i class="fas fa-envelope"></i> <strong>Username: </strong>
+                        <%= user.username %>
+                </li>
+                <li class="list-group-item">
+                    <i class="fas fa-envelope"></i> <strong>Email: </strong>
+                        <%= user.email %>
+                </li>
+                <li class="list-group-item">
+                    <i class="fas fa-envelope"></i> <strong>First name: </strong>
+                        <%= user.firstName %>
+                </li>
+                <li class="list-group-item">
+                    <i class="fas fa-envelope"></i> <strong>Last name: </strong>
+                        <%= user.lastName %>
+                </li>
+                <li class="list-group-item">
+                    <i class="fas fa-envelope"></i> <strong>Date of birth: </strong>
+                        <%= user.dateOfBirth %>
+                </li>
+            </ul>
+            <a href="/edit/<%= user.username %>">
+                <button>Edit Profile</button>
+             </a>
+             <a href="/api/user/logout">
+                <button>Logout</button>
+             </a>
+        </div>
+    </main>
+
+</body>
+
+</html>
