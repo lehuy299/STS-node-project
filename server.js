@@ -1,6 +1,4 @@
 const express = require('express')
-const path = require('path')
-const bodyParser = require('body-parser')
 const mongoose = require('mongoose')
 const dotenv = require('dotenv')
 dotenv.config()
@@ -11,6 +9,8 @@ const { API_PORT } = process.env;
 const port = process.env.PORT || API_PORT;
 const cookieParser = require("cookie-parser");
 const errorHandler = require('./handlers/error.js')
+const session = require('express-session');
+const flash = require('express-flash');
 
 mongoose
 	.connect(mongoConnectionString, {})
@@ -19,11 +19,18 @@ mongoose
 		errorHandler.databaseConnectionFailed(err);
 	})
 
-app.use(cookieParser());
-app.use('/', express.static(path.join(__dirname, 'static')))
-app.use(bodyParser.json())
+app.set('view engine', 'ejs');
 
-app.use('/api/user', userRouter);
+app.use(cookieParser());
+app.use(express.urlencoded());
+app.use(express.json());
+
+app.use(session( {secret:'blablablablabla', resave: false, saveUninitialized: false} ));
+app.use(flash());
+
+app.use('/', userRouter);
+
+app.use(require('./middleware/error.js').validation);
 
 app.listen(port, () => {
 	console.log(`Server up at ${port}`)

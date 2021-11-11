@@ -1,16 +1,38 @@
 const express = require('express');
+
 const userRouter = express.Router();
-const userHandler = require('../handlers/user.js')
-const userValidation = require('../validation/user.js')
-const { validate, ValidationError, Joi } = require('express-validation');
-const authorization = require("../middleware/auth.js")
+const multer = require('multer');
+const { validate } = require('express-validation');
+const userHandler = require('../handlers/user');
+const userValidation = require('../validation/user');
+const { authorization, isAdmin } = require('../middleware/auth');
 
-userRouter.post('/login',validate(userValidation.login, {}, {}), userHandler.login)
+const upload = multer({ dest: 'uploads/' });
 
-userRouter.post('/register', validate(userValidation.register, {}, {}), userHandler.register)
+userRouter.get('/', userHandler.home);
 
-userRouter.get('/welcome', authorization, userHandler.welcome)
+userRouter.post('/api/user/login', validate(userValidation.login, {}, {}), userHandler.login);
 
-userRouter.get('/logout', authorization, userHandler.logout)
+userRouter.get('/login', userHandler.getLogin);
+
+userRouter.get('/register', userHandler.getRegister);
+
+userRouter.get('/profile', userHandler.getProfile);
+
+userRouter.get('/api/user/images/:key', authorization, userHandler.getImage);
+
+userRouter.get('/edit/:username', authorization, userHandler.getEdit);
+
+userRouter.post('/api/user/register', upload.single('avatar'), validate(userValidation.register, {}, {}), userHandler.register);
+
+userRouter.get('/api/user/profile/:username', authorization, userHandler.profile);
+
+userRouter.post('/api/user/update/:username', authorization, upload.single('avatar'), validate(userValidation.update, {}, {}), userHandler.update);
+
+userRouter.get('/api/user/logout', authorization, userHandler.logout);
+
+userRouter.get('/api/user/delete/:username', authorization, isAdmin, userHandler.deleteUser);
+
+userRouter.get('/users', authorization, isAdmin, userHandler.getUserList);
 
 module.exports = userRouter;

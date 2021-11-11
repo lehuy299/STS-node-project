@@ -1,85 +1,199 @@
-const User = require('../model/user.js');
+
+const User = require('../model/user');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const JWT_SECRET = process.env.JWT_SECRET;
-const errorHandler = require('./error.js');
+
+const { JWT_SECRET } = process.env;
+const fs = require('fs');
+const util = require('util');
+const { uploadFile, getFileStream } = require('../helpers/s3/s3');
+
+const uploadToS3 = async (file) => {
+  const result = await uploadFile(file);
+  const unlinkFile = util.promisify(fs.unlink);
+  await unlinkFile(file.path);
+  return result;
+};
+
+exports.getRegister = (req, res) => {
+  const form = req.cookies.form || {};
+  res.render('pages/register', { form });
+};
+
+exports.getLogin = (req, res) => {
+  res.render('pages/login');
+};
+
+exports.getProfile = (req, res) => {
+  res.render('pages/profile');
+};
+
+exports.getEdit = async (req, res) => {
+  const { username } = req.params;
+  const user = await User.findOne({ username }).lean();
+
+  res.render('pages/edit', { user });
+};
+
+exports.home = (req, res) => {
+  res.render('pages/home');
+};
+
+exports.getImage = (req, res) => {
+  const { key } = req.params;
+  const readStream = getFileStream(key);
+
+  readStream.pipe(res);
+};
 
 exports.login = async (req, res) => {
-	const { username, password } = req.body
-	const user = await User.findOne({ username }).lean()
+  const { username, password } = req.body;
 
-	if (!user) {
-		return res.json({ status: 'error', error: 'Invalid username/password' })
-	}
+  const user = await User.findOne({ username }).lean();
 
-	if (await bcrypt.compare(password, user.password)) {
-		// the username, password combination is successful
+  if (!user) {
+    req.flash('invalidUserErr', 'Invalid username/password');
+    return res.redirect('/login');
+  }
 
-		const token = jwt.sign(
-			{
-				id: user._id,
-				username: user.username
-			},
-			JWT_SECRET
-		)
+  if (await bcrypt.compare(password, user.password)) {
+    const token = jwt.sign(
+      {
+        // eslint-disable-next-line no-underscore-dangle
+        id: user._id,
+        username: user.username,
+        role: user.role,
+      },
+      JWT_SECRET,
+    );
 
-        return res
-            .cookie("token", token, {
-            httpOnly: true,
-            //secure: process.env.NODE_ENV === "production",
-            })
-            .json({ status:'ok', message: "Logged in successfully 😊 👌" });
-    }
+    return res
+      .cookie('token', token, {
+        httpOnly: true,
+      })
+      .redirect(`/api/user/profile/${username}`);
+  }
 
-	res.json({ status: 'error', error: 'Invalid username/password' })
+  req.flash('invalidUserErr', 'Invalid username/password');
+  return res.redirect('/login');
 };
 
 exports.register = async (req, res) => {
-	const { username, password: plainTextPassword } = req.body
+  const {
+    username, password: plainTextPassword, email, firstName, lastName, dateOfBirth,
+  } = req.body;
 
-	if (!username || typeof username !== 'string') {
-		return res.json({ status: 'error', error: 'Invalid username' })
-	}
+  const password = await bcrypt.hash(plainTextPassword, 10);
 
-	if (!plainTextPassword || typeof plainTextPassword !== 'string') {
-		return res.json({ status: 'error', error: 'Invalid password' })
-	}
+  res.cookie('form', req.body);
 
-	if (plainTextPassword.length < 5) {
-		return res.json({
-			status: 'error',
-			error: 'Password too small. Should be atleast 6 characters'
-		})
-	}
+  const isDuplicated = await User.findOne({ username });
 
-	const password = await bcrypt.hash(plainTextPassword, 10)
+  if (isDuplicated) {
+    req.flash('userDupErr', 'Username has been created');
+    return res.redirect('back');
+  }
+  const timestamp = Date.now();
 
-	try {
-		const response = await User.create({
-			username,
-			password
-		})
-		console.log('User created successfully: ', response)
-	} catch (error) {
-		if (error.code === 11000) {
-			// duplicate key
-			return res.json({ status: 'error', error: 'Username already in use' })
-		}
-		throw error
+  let avatarUrl = '';
+  try {
+    if (req.file) {
+      avatarUrl = (await uploadToS3(req.file)).Key;
+    }
 
-		//errorHandler.registerDuplicate(error, res);
-	}
-	res.json({ status: 'ok' })
-}
+    await User.create({
+      username,
+      password,
+      avatarUrl,
+      email,
+      firstName,
+      lastName,
+      dateOfBirth,
+      timestamp,
+    });
+  } catch (error) {
+    console.log(error);
+  }
+  req.flash('signupSucessMsg', 'Register successfully. Now please login');
+  return res.redirect('/login');
+};
 
-exports.welcome = (req, res) => {
-    res.send("Welcome!!!");
+exports.update = async (req, res) => {
+  const {
+    email, firstName, lastName, dateOfBirth,
+  } = req.body;
+  const { username } = req.params;
+  const user = await User.findOne({ username }).lean();
+  let { avatarUrl } = user;
+
+  try {
+    if (req.file) {
+      avatarUrl = (await uploadToS3(req.file)).Key;
+    }
+
+    await User.updateOne(
+      { username },
+      {
+        $set: {
+          email,
+          avatarUrl,
+          firstName,
+          lastName,
+          dateOfBirth,
+        },
+      },
+    );
+  } catch (error) {
+    console.log(error);
+  }
+  res.redirect(`/api/user/profile/${username}`);
+};
+
+exports.profile = async (req, res) => {
+  const { username } = req.params;
+
+  if (username !== req.username) return res.send(403);
+
+  const user = await User.findOne({ username }).lean();
+
+  return res.render('pages/profile', { user });
 };
 
 exports.logout = (req, res) => {
-	return res
-	  .clearCookie("token")
-	  .status(200)
-	  .json({ message: "Successfully logged out 😏 🍀" })
+  req.flash('logoutMsg', 'Successfully Logged Out');
+  return res
+    .clearCookie('token')
+    .status(200)
+    .redirect('/');
 };
 
+exports.getUserList = async (req, res) => {
+  const query = { role: 'User' };
+  const mySort = {};
+
+  if (req.query.username) { query.username = new RegExp(req.query.username, 'i'); }
+  if (req.query.lastName) { query.lastName = new RegExp(req.query.lastName, 'i'); }
+  if (req.query.firstName) { query.firstName = new RegExp(req.query.firstName, 'i'); }
+
+  if (req.query.sort === 'username') { req.query.order === 'asc' ? mySort.username = 1 : mySort.username = -1; }
+  else if (req.query.sort === 'firstName') { req.query.order === 'asc' ? mySort.firstName = 1 : mySort.firstName = -1; }
+  else if (req.query.sort === 'lastName') { req.query.order === 'asc' ? mySort.lastName = 1 : mySort.lastName = -1; }
+  else if (req.query.sort === 'timestamp') { req.query.order === 'asc' ? mySort.timestamp = 1 : mySort.timestamp = -1; }
+
+  const users = await User.find(query).sort(mySort);
+  res.render('pages/users', { users });
+};
+
+exports.deleteUser = async (req, res) => {
+  const { username } = req.params;
+
+  try {
+    await User.deleteOne(
+      { username },
+    );
+  } catch (error) {
+    console.log(error);
+  }
+  req.flash('delUsrMsg', `Successfully delete user: ${username}`);
+  res.redirect('back');
+};
