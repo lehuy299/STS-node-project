@@ -2,7 +2,6 @@ const User = require('../model/user.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET;
-const errorHandler = require('./error.js');
 
 exports.getRegister = (req, res) => {
 	res.render('pages/register');
@@ -20,9 +19,11 @@ exports.getEdit = async (req, res) => {
 	const username = req.params.username;
 	const user = await User.findOne({ username: username }).lean();
 
-
-
 	res.render('pages/edit', { user: user });
+}
+
+exports.home = (req, res) => {
+	res.render('pages/home');
 }
 
 exports.login = async (req, res) => {
@@ -36,7 +37,6 @@ exports.login = async (req, res) => {
 	}
 
 	if (await bcrypt.compare(password, user.password)) {
-		// the username, password combination is successful
 
 		const token = jwt.sign(
 			{
@@ -49,7 +49,6 @@ exports.login = async (req, res) => {
 		return res
 			.cookie("token", token, {
 				httpOnly: true,
-				//secure: process.env.NODE_ENV === "production",
 			})
 			.redirect('/api/user/profile/' + username)
 	}
@@ -66,9 +65,12 @@ exports.register = async (req, res) => {
 
 	if (isDuplicated) return res.render('pages/register', { error: "Username has been created" })
 
+	const { path, filename } = req.file || {};
+
 	const response = await User.create({
 		username,
 		password,
+		avatar: { path: path, filename: filename },
 		email,
 		firstName,
 		lastName,
@@ -80,14 +82,17 @@ exports.register = async (req, res) => {
 }
 
 exports.update = async (req, res) => {
-	const { firstName, lastName, dateOfBirth } = req.body;
+	const { email, firstName, lastName, dateOfBirth } = req.body;
 	const username = req.params.username;
+	const { path, filename } = req.file || {};
 
 	try {
 		const response = await User.updateOne(
 			{ username: username },
 			{
 				$set: {
+					email: email,
+					avatar: { path: path, filename: filename },
 					firstName: firstName,
 					lastName: lastName,
 					dateOfBirth: dateOfBirth
@@ -103,6 +108,9 @@ exports.update = async (req, res) => {
 
 exports.profile = async (req, res) => {
 	const username = req.params.username;
+
+	if (username !== req.username) return res.send(403)
+
 	const user = await User.findOne({ username: username }).lean();
 
 	res.render('pages/profile', { user: user });
@@ -112,6 +120,6 @@ exports.logout = (req, res) => {
 	return res
 		.clearCookie("token")
 		.status(200)
-		.json({ message: "Successfully logged out 😏 🍀" })
+		.redirect('/')
 };
 

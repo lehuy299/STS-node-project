@@ -4,6 +4,11 @@ const userHandler = require('../handlers/user.js')
 const userValidation = require('../validation/user.js')
 const { validate, ValidationError, Joi } = require('express-validation')
 const authorization = require("../middleware/auth.js")
+const multer = require('multer')
+const { storage } = require('../cloudinary')
+const upload = multer({ storage })
+
+userRouter.get('/', userHandler.home)
 
 userRouter.post('/api/user/login', validate(userValidation.login, {}, {}), userHandler.login)
 
@@ -15,11 +20,11 @@ userRouter.get('/profile', userHandler.getProfile)
 
 userRouter.get('/edit/:username', authorization, userHandler.getEdit)
 
-userRouter.post('/api/user/register', validate(userValidation.register, {}, {}), userHandler.register)
+userRouter.post('/api/user/register', upload.single('avatar'), validate(userValidation.register, {}, {}), userHandler.register)
 
 userRouter.get('/api/user/profile/:username', authorization, userHandler.profile)
 
-userRouter.post('/api/user/update/:username', authorization, userHandler.update)
+userRouter.post('/api/user/update/:username', authorization, upload.single('avatar'), validate(userValidation.update, {}, {}), userHandler.update)
 
 userRouter.get('/api/user/logout', authorization, userHandler.logout)
 

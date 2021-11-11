@@ -8,14 +8,22 @@
 <body class="container">
     <h1>Sign Up</h1>
     <main>
-        <form name="form1" action="/api/user/register" method="POST" onsubmit="return ValidateEmail(document.form1.email)">
+        <form name="form1" action="/api/user/register" method="POST"
+            onsubmit="return ValidateEmail(document.form1.email)" enctype="multipart/form-data">
             <div class="form-group">
                 <label>Username*</label>
                 <input class="form-control" type="text" placeholder="Username" name="username" required>
-                <% if (typeof error !== 'undefined') { %>
-                    <div class="alert-danger"><%= error %></div>
-                <% } %>
+                <% if (typeof error !=='undefined' ) { %>
+                    <div class="alert-danger">
+                        <%= error %>
+                    </div>
+                    <% } %>
             </div>
+            <div class="form-group">
+                <label>Upload profile picture</label>
+                <input type="file" name="avatar" />
+            </div>
+            <div class="form-group">
                 <label>Password*</label>
                 <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password"
                     name="password" required>
@@ -52,9 +60,8 @@
                     document.form1.email.focus();
                     return false;
                 }
-                elseif()
             }
-            
+
         </script>
 
         <div class="mt-2 text-center">

@@ -18,8 +18,18 @@ const register = {
     }),
 }
 
+const update = {
+    body: Joi.object({
+        firstName: Joi.string().required(),
+        lastName: Joi.string().required(),
+        email: Joi.string().email().required(),
+        dateOfBirth: Joi.date().raw().required()
+    }),
+}
+
 module.exports =    
 {  
     login,
-    register
+    register,
+    update
 };
