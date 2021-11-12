@@ -7,12 +7,13 @@ const { validate } = require('express-validation');
 const userHandler = require('../handlers/user');
 const userValidation = require('../validation/user');
 const { authorization, isAdmin } = require('../middleware/auth');
+const { validateRegisterErr, validateLoginErr } = require('../middleware/error')
 
 const upload = multer({ dest: 'uploads/' });
 
 userRouter.get('/', userHandler.home);
 
-userRouter.post('/api/user/login', validate(userValidation.login, {}, {}), userHandler.login);
+userRouter.post('/login', validate(userValidation.login, {}, {}), validateLoginErr, userHandler.login);
 
 userRouter.get('/login', userHandler.getLogin);
 
@@ -24,7 +25,7 @@ userRouter.get('/api/user/images/:key', authorization, userHandler.getImage);
 
 userRouter.get('/edit/:username', authorization, userHandler.getEdit);
 
-userRouter.post('/api/user/register', upload.single('avatar'), validate(userValidation.register, {}, {}), userHandler.register);
+userRouter.post('/register', upload.single('avatar'), validate(userValidation.register, {}, {}), validateRegisterErr, userHandler.register);
 
 userRouter.get('/api/user/profile/:username', authorization, userHandler.profile);
 

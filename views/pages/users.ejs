@@ -18,25 +18,31 @@
                     <h1>User List</h1>
 
                     <form class="search" action="/users" method="GET">
-                        <input type="text" placeholder="Username" name="username" aria-label="Search">
-                        <input type="text" placeholder="First Name" name="firstName" aria-label="Search">
-                        <input type="text" placeholder="Last Name" name="lastName" aria-label="Search">
+                        <input type="text" value="<%=searchValueStr%>" placeholder="Search" name="searchValue" aria-label="Search">
                         <h5>Sort By</h5>
+                        <% 
+                            const usernameCheck = "checked";
+                            const firstNameCheck = mySort.firstName ? "checked" : "";
+                            const lastNameCheck = mySort.lastName ? "checked" : "";
+                            const timestampCheck = mySort.timestamp ? "checked" : "";
+                            const ascCheck = "checked";                          
+                            const descCheck = mySort[Object.keys(mySort)[0]] === -1 ? "checked" : "";
+                        %>
                         <div>
                             <label>Username</label>
-                            <input type="radio" name="sort" value="username" checked="checked">
+                            <input type="radio" name="sort" value="username" <%= usernameCheck %> >
                             <label>First Name</label>
-                            <input type="radio" name="sort" value="firstName">
+                            <input type="radio" name="sort" value="firstName" <%= firstNameCheck %> >
                             <label>Last Name</label>
-                            <input type="radio" name="sort" value="lastName">
+                            <input type="radio" name="sort" value="lastName" <%= lastNameCheck %> >
                             <label>Joined Date</label>
-                            <input type="radio" name="sort" value="timestamp">
+                            <input type="radio" name="sort" value="timestamp" <%= timestampCheck %> >
                         </div>
                         <div>
                             <label>Asc</label>
-                            <input type="radio" name="order" value="asc" checked="checked">
+                            <input type="radio" name="order" value="asc" <%= ascCheck %> >
                             <label>Desc</label>
-                            <input type="radio" name="order" value="desc">
+                            <input type="radio" name="order" value="desc" <%= descCheck %> >
                         </div>
                         <button> Filter </button>
                     </form>

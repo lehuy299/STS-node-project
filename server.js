@@ -31,8 +31,6 @@ app.use(flash());
 
 app.use('/', userRouter);
 
-app.use(require('./middleware/error.js').validation);
-
 app.listen(port, () => {
 	console.log(`Server up at ${port}`)
 })
