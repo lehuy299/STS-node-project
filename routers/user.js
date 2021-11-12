@@ -1,6 +1,7 @@
 const express = require('express');
 
 const userRouter = express.Router();
+
 const multer = require('multer');
 const { validate } = require('express-validation');
 const userHandler = require('../handlers/user');

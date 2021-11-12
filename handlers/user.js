@@ -182,6 +182,7 @@ exports.getUserList = async (req, res) => {
 
   const users = await User.find(query).sort(mySort);
   res.render('pages/users', { users });
+
 };
 
 exports.deleteUser = async (req, res) => {

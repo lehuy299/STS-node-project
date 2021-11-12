@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../model/user');
 
 const authorization = (req, res, next) => {
+
   const { token } = req.cookies;
 
   if (!token) {
@@ -18,6 +19,7 @@ const authorization = (req, res, next) => {
     console.log(e);
     return res.sendStatus(403);
   }
+
 };
 
 const isAdmin = async (req, res, next) => {
