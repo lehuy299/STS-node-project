@@ -1,31 +1,39 @@
 const express = require('express');
+
 const userRouter = express.Router();
-const userHandler = require('../handlers/user.js')
-const userValidation = require('../validation/user.js')
-const { validate, ValidationError, Joi } = require('express-validation')
-const authorization = require("../middleware/auth.js")
-const multer = require('multer')
-const { storage } = require('../cloudinary')
-const upload = multer({ storage })
 
-userRouter.get('/', userHandler.home)
+const multer = require('multer');
+const { validate } = require('express-validation');
+const userHandler = require('../handlers/user');
+const userValidation = require('../validation/user');
+const { authorization, isAdmin } = require('../middleware/auth');
 
-userRouter.post('/api/user/login', validate(userValidation.login, {}, {}), userHandler.login)
+const upload = multer({ dest: 'uploads/' });
 
-userRouter.get('/login', userHandler.getLogin)
+userRouter.get('/', userHandler.home);
 
-userRouter.get('/register', userHandler.getRegister)
+userRouter.post('/api/user/login', validate(userValidation.login, {}, {}), userHandler.login);
 
-userRouter.get('/profile', userHandler.getProfile)
+userRouter.get('/login', userHandler.getLogin);
 
-userRouter.get('/edit/:username', authorization, userHandler.getEdit)
+userRouter.get('/register', userHandler.getRegister);
 
-userRouter.post('/api/user/register', upload.single('avatar'), validate(userValidation.register, {}, {}), userHandler.register)
+userRouter.get('/profile', userHandler.getProfile);
 
-userRouter.get('/api/user/profile/:username', authorization, userHandler.profile)
+userRouter.get('/api/user/images/:key', authorization, userHandler.getImage);
 
-userRouter.post('/api/user/update/:username', authorization, upload.single('avatar'), validate(userValidation.update, {}, {}), userHandler.update)
+userRouter.get('/edit/:username', authorization, userHandler.getEdit);
 
-userRouter.get('/api/user/logout', authorization, userHandler.logout)
+userRouter.post('/api/user/register', upload.single('avatar'), validate(userValidation.register, {}, {}), userHandler.register);
+
+userRouter.get('/api/user/profile/:username', authorization, userHandler.profile);
+
+userRouter.post('/api/user/update/:username', authorization, upload.single('avatar'), validate(userValidation.update, {}, {}), userHandler.update);
+
+userRouter.get('/api/user/logout', authorization, userHandler.logout);
+
+userRouter.get('/api/user/delete/:username', authorization, isAdmin, userHandler.deleteUser);
+
+userRouter.get('/users', authorization, isAdmin, userHandler.getUserList);
 
 module.exports = userRouter;

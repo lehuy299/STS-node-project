@@ -13,35 +13,40 @@
             <ul class="list-group list-group-flush">
                 <li class="list-group-item">
                     <i class="fas fa-envelope"></i> <strong>Username: </strong>
-                        <%= user.username %>
+                    <%= user.username %>
                 </li>
                 <li class="list-group-item">
                     <i class="fas fa-envelope"></i> <strong>Avatar: </strong>
-                    <img src="<%= user.avatar[0].path %>" alt="Avatar" width="200" height="100">    
+                    <img src="/api/user/images/<%= user.avatarUrl %>" alt="Avatar" height="100">
                 </li>
                 <li class="list-group-item">
                     <i class="fas fa-envelope"></i> <strong>Email: </strong>
-                        <%= user.email %>
+                    <%= user.email %>
                 </li>
                 <li class="list-group-item">
                     <i class="fas fa-envelope"></i> <strong>First name: </strong>
-                        <%= user.firstName %>
+                    <%= user.firstName %>
                 </li>
                 <li class="list-group-item">
                     <i class="fas fa-envelope"></i> <strong>Last name: </strong>
-                        <%= user.lastName %>
+                    <%= user.lastName %>
                 </li>
                 <li class="list-group-item">
                     <i class="fas fa-envelope"></i> <strong>Date of birth: </strong>
-                        <%= user.dateOfBirth %>
+                    <%= user.dateOfBirth %>
                 </li>
             </ul>
             <a href="/edit/<%= user.username %>">
                 <button>Edit Profile</button>
-             </a>
-             <a href="/api/user/logout">
+            </a>
+            <a href="/api/user/logout">
                 <button>Logout</button>
-             </a>
+            </a>
+            <% if(user.role==='admin' ){ %>
+                <a href="/users">
+                    <button>User List</button>
+                </a>
+                <% } %>
         </div>
     </main>
 
