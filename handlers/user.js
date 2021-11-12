@@ -16,8 +16,7 @@ const uploadToS3 = async (file) => {
 };
 
 exports.getRegister = (req, res) => {
-  const form = req.cookies.form || {};
-  res.render('pages/register', { form });
+  res.render('pages/register');
 };
 
 exports.getLogin = (req, res) => {
@@ -59,7 +58,6 @@ exports.login = async (req, res) => {
   if (await bcrypt.compare(password, user.password)) {
     const token = jwt.sign(
       {
-        // eslint-disable-next-line no-underscore-dangle
         id: user._id,
         username: user.username,
         role: user.role,
@@ -85,13 +83,12 @@ exports.register = async (req, res) => {
 
   const password = await bcrypt.hash(plainTextPassword, 10);
 
-  res.cookie('form', req.body);
-
   const isDuplicated = await User.findOne({ username });
 
   if (isDuplicated) {
     req.flash('userDupErr', 'Username has been created');
-    return res.redirect('back');
+    const user = { username, email, firstName, lastName, dateOfBirth } || {};
+    return res.render('pages/register', { user });
   }
   const timestamp = Date.now();
 
@@ -168,21 +165,18 @@ exports.logout = (req, res) => {
 };
 
 exports.getUserList = async (req, res) => {
-  const query = { role: 'User' };
   const mySort = {};
-
-  if (req.query.username) { query.username = new RegExp(req.query.username, 'i'); }
-  if (req.query.lastName) { query.lastName = new RegExp(req.query.lastName, 'i'); }
-  if (req.query.firstName) { query.firstName = new RegExp(req.query.firstName, 'i'); }
+  const searchValueStr = req.query.searchValue;
+  const searchValue = new RegExp(searchValueStr, 'i');
 
   if (req.query.sort === 'username') { req.query.order === 'asc' ? mySort.username = 1 : mySort.username = -1; }
   else if (req.query.sort === 'firstName') { req.query.order === 'asc' ? mySort.firstName = 1 : mySort.firstName = -1; }
   else if (req.query.sort === 'lastName') { req.query.order === 'asc' ? mySort.lastName = 1 : mySort.lastName = -1; }
   else if (req.query.sort === 'timestamp') { req.query.order === 'asc' ? mySort.timestamp = 1 : mySort.timestamp = -1; }
 
-  const users = await User.find(query).sort(mySort);
-  res.render('pages/users', { users });
+  let users = await User.find({ $or: [ { username: searchValue }, { firstName: searchValue }, { lastName: searchValue } ], role: "User" }).sort(mySort);
 
+  res.render('pages/users', { users, searchValueStr, mySort });
 };
 
 exports.deleteUser = async (req, res) => {
