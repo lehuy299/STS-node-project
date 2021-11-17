@@ -65,7 +65,9 @@
     <h1>Chatroom</h1>
     <ul id="messages">
         <% for(message of messages){ %>
-            <li> <%= message.user %>: <%= message.message %> </li>
+            <li>
+                <%= message.user %>: <%= message.message %>
+            </li>
             <% } %>
     </ul>
     <form id="form" action="">
@@ -87,11 +89,16 @@
     const messages = document.getElementById('messages');
     const form = document.getElementById('form');
     const msg = document.getElementById('msg');
-    const joinRoomButton = document.getElementById('room-button');
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    const room = urlParams.get('room')
+    let room = urlParams.get('room');
+
+    let split = room.split('--with--');
+    if (split.length > 1) {
+        let unique = [...new Set(split)].sort((a, b) => (a < b ? -1 : 1));
+        room = `${unique[0]}--with--${unique[1]}`;
+    }
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();

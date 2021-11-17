@@ -19,6 +19,8 @@ userRouter.get('/login', userHandler.getLogin);
 
 userRouter.get('/register', userHandler.getRegister);
 
+userRouter.get('/dashboard', authorization, userHandler.getDashboard);
+
 userRouter.get('/profile', userHandler.getProfile);
 
 userRouter.get('/api/user/images/:key', authorization, userHandler.getImage);

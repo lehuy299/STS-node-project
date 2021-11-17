@@ -23,6 +23,12 @@ exports.getLogin = (req, res) => {
   res.render('pages/login');
 };
 
+exports.getDashboard = async (req, res) => {
+  const users = await User.find({});
+ 
+  res.render('pages/dashboard', {curUsername: req.username, users: users });
+};
+
 exports.getProfile = (req, res) => {
   res.render('pages/profile');
 };
@@ -69,7 +75,7 @@ exports.login = async (req, res) => {
       .cookie('token', token, {
         httpOnly: false,
       })
-      .redirect(`/api/user/profile/${username}`);
+      .redirect('/dashboard');
   }
 
   req.flash('invalidUserErr', 'Invalid username/password');
