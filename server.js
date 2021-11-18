@@ -19,6 +19,7 @@ const Message = require('./model/message.js');
 const User = require('./model/user.js');
 const io = new Server(server);
 const jwt = require('jsonwebtoken');
+const Chatroom = require('./model/chatroom.js');
 
 mongoose
 	.connect(mongoConnectionString, {})
@@ -44,7 +45,7 @@ io.use(async (socket, next) => {
 		const data = await jwt.verify(token, process.env.JWT_SECRET);
 		socket.username = data.username;
 		next();
-	// eslint-disable-next-line no-empty
+		// eslint-disable-next-line no-empty
 	} catch (err) { }
 });
 
@@ -55,16 +56,40 @@ io.on('connection', async (socket) => {
 		console.log('A user disconnected: ' + socket.username);
 	});
 
-	socket.on("join-room", (room, cb) => {
-		socket.join(room);
-		cb(`Joined ${room}`)
+	socket.on("join-room", async (room, curUser, cb) => {
+		const joinedRoom = await Chatroom.findOne({ name: room });
+		let roomId;
+		if (!joinedRoom) {
+			const newRoom = await new Chatroom({ name: room });
+			roomId = newRoom._id;
+			await newRoom.save();
+
+			socket.join(newRoom.name);
+			cb(`Joined ${newRoom.name}`)
+		} else {
+			roomId = joinedRoom._id;
+			socket.join(room);
+			cb(`Joined ${room}`);
+		}
+		await Message.updateMany({ user: { $ne: socket.username }, chatroom: roomId }, { $addToSet: { seenList: [curUser] } });
+		const message = await Message.find({ chatroom: roomId });
+		//console.log("222", message.seenList);
+		io.to(room).emit('seen-message', { message });
 	});
 
 	socket.on('chat message', async (msg, room) => {
 		const user = await User.findOne({ username: socket.username });
-		const newMessage = await new Message({ user: user.username, message: msg, chatroom: room });
+		const roomId = (await Chatroom.findOne({ name: room }))._id;
+		const newMessage = await new Message({ user: user.username, message: msg, chatroom: roomId });
 		io.to(room).emit('chat message', { message: msg, username: user.username });
 		await newMessage.save();
+	});
+
+	socket.on('edit-message', async (msgId, newMsg, room) => {
+		//update the message and return it to client
+		await Message.updateOne({ _id: msgId }, { message: newMsg });
+		const message = await Message.find({ _id: msgId });
+		io.to(room).emit('edit-message', { message });
 	});
 });
 

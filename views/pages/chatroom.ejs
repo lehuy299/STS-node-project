@@ -58,6 +58,10 @@
         #messages>li:nth-child(odd) {
             background: #efefef;
         }
+
+        .seen {
+            float: right;
+        }
     </style>
 </head>
 
@@ -66,7 +70,16 @@
     <ul id="messages">
         <% for(message of messages){ %>
             <li>
-                <%= message.user %>: <%= message.message %>
+                <span class="content">
+                    <span class="user">
+                        <%= message.user %>:
+                    </span>
+                    <span class="message">
+                        <%= message.message %>
+                    </span>
+                </span>
+                <span class="seen"></span>
+
             </li>
             <% } %>
     </ul>
@@ -89,10 +102,15 @@
     const messages = document.getElementById('messages');
     const form = document.getElementById('form');
     const msg = document.getElementById('msg');
+    const seens = document.getElementsByClassName('seen');
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     let room = urlParams.get('room');
+
+    let messageLis = document.getElementsByClassName('message');
+    const msgList = <%- JSON.stringify(messages) %>;
+    const curUser = <%- JSON.stringify(username) %>;
 
     let split = room.split('--with--');
     if (split.length > 1) {
@@ -108,7 +126,7 @@
         }
     });
 
-    socket.emit('join-room', room, joinMsg => {
+    socket.emit('join-room', room, curUser, joinMsg => {
         var item = document.createElement('li');
         item.textContent = joinMsg;
         messages.appendChild(item);
@@ -117,11 +135,18 @@
 
     socket.on('connect', function (msg) {
 
-        var item = document.createElement('li');
-        item.textContent = `You connect with id: ${socket.id}`;
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
+        Array.prototype.forEach.call(messageLis, (messageLi, index) => {
+            if (msgList[index].user == curUser) messageLi.setAttribute("contenteditable", "true");
+        });
     });
+
+    socket.on('seen-message', function (msgs) {
+        Array.prototype.forEach.call(seens, (seen, index) => {
+            seen.innerHTML = "Seen By: " 
+            seen.innerHTML += msgs.message[index].seenList || " ";
+        });
+    });
+
 
     socket.on('chat message', function ({ message, username }) {
         var item = document.createElement('li');
@@ -129,6 +154,18 @@
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
     });
+
+    Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('input', function () {
+        const newMsg = messageLi.textContent;
+        const msgId = msgList[index]._id
+        socket.emit('edit-message', msgId, newMsg, room);
+    }));
+
+    socket.on('edit-message', function (msg) {
+        const index = msgList.findIndex(mess => mess._id == msg.message[0]._id);
+        messageLis[index].textContent = msg.message[0].message;
+    });
+
 </script>
 
 </html>
