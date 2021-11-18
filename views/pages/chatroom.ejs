@@ -109,7 +109,7 @@
     let room = urlParams.get('room');
 
     let messageLis = document.getElementsByClassName('message');
-    const msgList = <%- JSON.stringify(messages) %>;
+    let msgList = <%- JSON.stringify(messages) %>;
     const curUser = <%- JSON.stringify(username) %>;
 
     let split = room.split('--with--');
@@ -135,9 +135,10 @@
 
     socket.on('connect', function (msg) {
 
-        Array.prototype.forEach.call(messageLis, (messageLi, index) => {
+        Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('dblclick', function () {
             if (msgList[index].user == curUser) messageLi.setAttribute("contenteditable", "true");
-        });
+        }));
+
     });
 
     socket.on('seen-message', function (msgs) {
@@ -148,23 +149,40 @@
     });
 
 
-    socket.on('chat message', function ({ message, username }) {
+    socket.on('chat message', function ({ message, username, id }) {
         var item = document.createElement('li');
-        item.textContent = username + ":  " + message;
+        item.innerHTML = `<span class='content'> <span class='user'> ${username}:  </span><span class='message'> ${message} </span></span> <span class='seen'> </span>`
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
-    });
 
-    Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('input', function () {
-        const newMsg = messageLi.textContent;
+        const newMsgs = document.getElementsByClassName('message');
+        msgList = [...msgList, {_id: id, user: username, message}]
+        console.log("666", msgList);
+        console.log("677", newMsgs);
+        
+        Array.prototype.forEach.call(newMsgs, (newMsg, index) => newMsg.addEventListener('dblclick', function () {
+            if (msgList[index].user == curUser) newMsg.setAttribute("contenteditable", "true");
+        })); 
+
+        Array.prototype.forEach.call(newMsgs, (msg, index) => msg.addEventListener('input', function () {
+        const newMsg = msg.textContent;
         const msgId = msgList[index]._id
         socket.emit('edit-message', msgId, newMsg, room);
     }));
+        
+    });
+
 
     socket.on('edit-message', function (msg) {
         const index = msgList.findIndex(mess => mess._id == msg.message[0]._id);
         messageLis[index].textContent = msg.message[0].message;
     });
+    
+    Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('input', function () {
+        const newMsg = messageLi.textContent;
+        const msgId = msgList[index]._id
+        socket.emit('edit-message', msgId, newMsg, room);
+    }));
 
 </script>
 

@@ -11,7 +11,7 @@ exports.getChatroom = async (req, res) => {
         chatroom = `${unique[0]}--with--${unique[1]}`;
     }
     const room = await Chatroom.find({ name: chatroom });
-    const messages = await Message.find({ chatroom: room }).sort({$natural:-1}).limit(50);
+    const messages = await Message.find({ chatroom: room });
     //await Message.updateMany({ user: { $ne: username }}, {$addToSet: {seenList: [username]}});
     res.render('pages/chatroom', { username, messages });
 };

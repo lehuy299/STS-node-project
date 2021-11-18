@@ -20,6 +20,7 @@ const User = require('./model/user.js');
 const io = new Server(server);
 const jwt = require('jsonwebtoken');
 const Chatroom = require('./model/chatroom.js');
+const { instrument } = require('@socket.io/admin-ui');
 
 mongoose
 	.connect(mongoConnectionString, {})
@@ -81,7 +82,7 @@ io.on('connection', async (socket) => {
 		const user = await User.findOne({ username: socket.username });
 		const roomId = (await Chatroom.findOne({ name: room }))._id;
 		const newMessage = await new Message({ user: user.username, message: msg, chatroom: roomId });
-		io.to(room).emit('chat message', { message: msg, username: user.username });
+		io.to(room).emit('chat message', { message: msg, username: user.username, id: newMessage._id });
 		await newMessage.save();
 	});
 
