@@ -1,5 +1,7 @@
 
-const User = require('../model/user');
+const Chatroom = require('../model/chatroom.js');
+const Message = require('../model/message.js');
+const User = require('../model/user.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 

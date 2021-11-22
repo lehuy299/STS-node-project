@@ -16,7 +16,10 @@ const messageSchema = new mongoose.Schema({
   },
   seenList: [{
     type: String,
-  }]
+  }],
+  sentTime: {
+    type: String,
+  }
 });
 
 module.exports = mongoose.model("Message", messageSchema);

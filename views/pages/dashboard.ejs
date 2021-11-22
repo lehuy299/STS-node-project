@@ -8,10 +8,6 @@
 <body class="container">
     <h1>Dashboard</h1>
     <form action="/chat">
-        <div class="form-control">
-            <label for="room">Room</label>
-            <input id="room" name="room" autocomplete="off" />
-        </div>
         <button type="submit">Join Chat</button>
     </form>
     <a href="/api/user/profile/<%=curUsername%>">
@@ -24,7 +20,7 @@
                 <span>
                     <%= user.username %>
                 </span>
-                <a href="/chat?room=<%= user.username %>--with--<%= curUsername %>">
+                <a href="/chat">
                     <button>Chat</button>
                 </a>
             </div>

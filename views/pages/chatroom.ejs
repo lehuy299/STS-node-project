@@ -2,92 +2,58 @@
 <html>
 
 <head>
+    <link href="/pages/css/chatroom.css" rel="stylesheet" type="text/css">
     <title>Socket.IO chat</title>
-    <style>
-        body {
-            margin: 0;
-            padding-bottom: 3rem;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-        }
 
-        #form {
-            background: rgba(0, 0, 0, 0.15);
-            padding: 0.25rem;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            display: flex;
-            height: 3rem;
-            box-sizing: border-box;
-            backdrop-filter: blur(10px);
-        }
-
-        #input {
-            border: none;
-            padding: 0 1rem;
-            flex-grow: 1;
-            border-radius: 2rem;
-            margin: 0.25rem;
-        }
-
-        #input:focus {
-            outline: none;
-        }
-
-        #form>button {
-            background: #333;
-            border: none;
-            padding: 0 1rem;
-            margin: 0.25rem;
-            border-radius: 3px;
-            outline: none;
-            color: #fff;
-        }
-
-        #messages {
-            list-style-type: none;
-            margin: 0;
-            padding: 0;
-        }
-
-        #messages>li {
-            padding: 0.5rem 1rem;
-        }
-
-        #messages>li:nth-child(odd) {
-            background: #efefef;
-        }
-
-        .seen {
-            float: right;
-        }
-    </style>
 </head>
 
 <body>
-    <h1>Chatroom</h1>
-    <ul id="messages">
-        <% for(message of messages){ %>
-            <li>
-                <span class="content">
-                    <span class="user">
-                        <%= message.user %>:
-                    </span>
-                    <span class="message">
-                        <%= message.message %>
-                    </span>
-                </span>
-                <span class="seen"></span>
-
-            </li>
-            <% } %>
-    </ul>
-    <form id="form" action="">
-        <label for="msg">Message</label>
-        <input id="msg" autocomplete="off" />
-        <button type="submit" id="send-button">Send</button>
-    </form>
+    <h3>
+        <%=user.firstName%>
+            <%=user.lastName%>
+    </h3>
+    <div id="chat-app">
+        <div id="room-list">
+            <% for(room of allRooms){ %>
+                <div class="room-name"><a href="/chat?room=<%= room._id %>"><button class="join-room">
+                            <%= room.name %>
+                        </button></a></div>
+                <% } %>
+        </div>
+        <div id="messages">
+            <% if(chatroom) { %>
+                <% for(message of messages){ %>
+                    <div class="content">
+                        <div class="user">
+                            <%= message.user %>, <%= message.sentTime %>
+                        </div>
+                        <div class="message">
+                            <%= message.message %>
+                        </div>
+                        <div class="seen"></div>
+                    </div>
+                    <% } %>
+        </div>
+        <form id="form" action="">
+            <input id="msg" autocomplete="off"  placeholder="Type a message"/>
+            <button type="submit" id="send-button">Send</button>
+        </form>
+        <%} else {%>
+            <div id="welcome">
+                <h1>Welcome, <%=user.firstName%>
+                </h1>
+                <div>
+                    <form action="/chat" method="post" class="room-create">
+                        <div class="form-control">
+                            <input id="room" name="room" autocomplete="off"/>
+                        </div>
+                        <button type="submit">Create Room</button>
+                    </form>
+                </div>
+            </div>
+            <%}%>
+                
+    </div>
 </body>
 <script src="/socket.io/socket.io.js"></script>
 <script>
@@ -103,31 +69,44 @@
     const form = document.getElementById('form');
     const msg = document.getElementById('msg');
     const seens = document.getElementsByClassName('seen');
+    const contents = document.getElementsByClassName('content');
+    const joinRoomButtons = document.getElementsByClassName('join-room');
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
-    let room = urlParams.get('room');
+    let roomId = urlParams.get('room');
 
     let messageLis = document.getElementsByClassName('message');
     let msgList = <%- JSON.stringify(messages) %>;
-    const curUser = <%- JSON.stringify(username) %>;
+    const curUser = <%- JSON.stringify(user.username) %>;
+    const allRooms = <%- JSON.stringify(allRooms) %>;
 
-    let split = room.split('--with--');
-    if (split.length > 1) {
-        let unique = [...new Set(split)].sort((a, b) => (a < b ? -1 : 1));
-        room = `${unique[0]}--with--${unique[1]}`;
+    function formatAMPM(date) {
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0'+minutes : minutes;
+        var strTime = hours + ':' + minutes + ' ' + ampm;
+        return strTime;
     }
+    const timeNow = formatAMPM(new Date);
+
+    Array.prototype.forEach.call(allRooms, (allRoom, index) => {
+        if (allRoom._id == roomId) joinRoomButtons[index].className += " active";
+    });
 
     form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (msg.value) {
-            socket.emit('chat message', msg.value, room);
+            socket.emit('chat message', msg.value, roomId, timeNow);
             msg.value = '';
         }
     });
 
-    socket.emit('join-room', room, curUser, joinMsg => {
-        var item = document.createElement('li');
+    socket.emit('join-room', roomId, curUser, joinMsg => {
+        const item = document.createElement('div');
         item.textContent = joinMsg;
         messages.appendChild(item);
         window.scrollTo(0, document.body.scrollHeight);
@@ -139,49 +118,53 @@
             if (msgList[index].user == curUser) messageLi.setAttribute("contenteditable", "true");
         }));
 
+        Array.prototype.forEach.call(contents, (content, index) => {
+            if (msgList[index].user === curUser) content.className += " right";
+        });
+
     });
 
     socket.on('seen-message', function (msgs) {
         Array.prototype.forEach.call(seens, (seen, index) => {
-            seen.innerHTML = "Seen By: " 
+            seen.innerHTML = "Seen By: ";
             seen.innerHTML += msgs.message[index].seenList || " ";
         });
     });
 
 
-    socket.on('chat message', function ({ message, username, id }) {
-        var item = document.createElement('li');
-        item.innerHTML = `<span class='content'> <span class='user'> ${username}:  </span><span class='message'> ${message} </span></span> <span class='seen'> </span>`
+    socket.on('chat message', function ({ message, username, id, sentTime }) {
+        const item = document.createElement('div');
+        item.className = "content";
+        if (curUser == username) item.className += " right";
+
+        item.innerHTML = `<div class='user'> ${username}, ${sentTime} </div><div class='message'> ${message} </div></div> <div class='seen'>`
         messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
+        //window.scrollTo(0, item.scrollHeight);
 
         const newMsgs = document.getElementsByClassName('message');
-        msgList = [...msgList, {_id: id, user: username, message}]
-        console.log("666", msgList);
-        console.log("677", newMsgs);
-        
+        msgList = [...msgList, { _id: id, user: username, message }]
+
         Array.prototype.forEach.call(newMsgs, (newMsg, index) => newMsg.addEventListener('dblclick', function () {
             if (msgList[index].user == curUser) newMsg.setAttribute("contenteditable", "true");
-        })); 
+        }));
 
         Array.prototype.forEach.call(newMsgs, (msg, index) => msg.addEventListener('input', function () {
-        const newMsg = msg.textContent;
-        const msgId = msgList[index]._id
-        socket.emit('edit-message', msgId, newMsg, room);
-    }));
-        
-    });
+            const newMsg = msg.textContent;
+            const msgId = msgList[index]._id
+            socket.emit('edit-message', msgId, newMsg, roomId);
+        }));
 
+    });
 
     socket.on('edit-message', function (msg) {
         const index = msgList.findIndex(mess => mess._id == msg.message[0]._id);
         messageLis[index].textContent = msg.message[0].message;
     });
-    
+
     Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('input', function () {
         const newMsg = messageLi.textContent;
         const msgId = msgList[index]._id
-        socket.emit('edit-message', msgId, newMsg, room);
+        socket.emit('edit-message', msgId, newMsg, roomId);
     }));
 
 </script>
