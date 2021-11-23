@@ -1,6 +1,4 @@
 
-const Chatroom = require('../model/chatroom.js');
-const Message = require('../model/message.js');
 const User = require('../model/user.js');
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
@@ -27,7 +25,6 @@ exports.getLogin = (req, res) => {
 
 exports.getDashboard = async (req, res) => {
   const users = await User.find({});
- 
   res.render('pages/dashboard', {curUsername: req.username, users: users });
 };
 
@@ -182,7 +179,7 @@ exports.getUserList = async (req, res) => {
   else if (req.query.sort === 'lastName') { req.query.order === 'asc' ? mySort.lastName = 1 : mySort.lastName = -1; }
   else if (req.query.sort === 'timestamp') { req.query.order === 'asc' ? mySort.timestamp = 1 : mySort.timestamp = -1; }
 
-  let users = await User.find({ $or: [ { username: searchValue }, { firstName: searchValue }, { lastName: searchValue } ], role: "User" }).sort(mySort);
+  let users = await User.find({ $or: [ { username: searchValue }, { firstName: searchValue }, { lastName: searchValue } ], role: "user" }).sort(mySort);
 
   res.render('pages/users', { users, searchValueStr, mySort });
 };

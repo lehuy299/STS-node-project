@@ -15,14 +15,15 @@
     </a>
     <hr>
     <div>
-        <% for(user of users){ if(user.username !==curUsername){ %>
+        <% for(user of users){
+            if(curUsername !== user.username){
+            %>
             <div>
-                <span>
-                    <%= user.username %>
-                </span>
-                <a href="/chat">
-                    <button>Chat</button>
-                </a>
+                <form method="post" action="/chat">
+                    <label><%= user.username %></label>
+                    <input type="hidden" name="room" value="<%= user.username %>--with--<%= curUsername %>"/>
+                    <button type="submit">Chat</button>
+                </form>
             </div>
             <% }} %>
     </div>

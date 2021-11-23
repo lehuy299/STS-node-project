@@ -8,19 +8,28 @@
 </head>
 
 <body>
-    <h3>
+    <a href="/chat">
         <%=user.firstName%>
             <%=user.lastName%>
-    </h3>
+    </a>
     <div id="chat-app">
         <div id="room-list">
-            <% for(room of allRooms){ %>
-                <div class="room-name"><a href="/chat?room=<%= room._id %>"><button class="join-room">
-                            <%= room.name %>
-                        </button></a></div>
-                <% } %>
+            <% for(room of newAllRooms){ 
+                let roomNameSplit = room.name.split('--with--'); 
+                if (roomNameSplit.length > 1){
+                let usernames = [...new Set(roomNameSplit)].sort((a, b) => (a < b ? -1 : 1));
+                    usernames[0] == user.username ? room.name = usernames[1] : room.name = usernames[0]
+                    
+                } %>
+                    <div class="room-name"><a href="/chat?room=<%= room._id %>"><button class="join-room">
+                                <%= room.name %>
+                            </button></a></div>
+                    <% } %>
         </div>
         <div id="messages">
+            <div id="room-title">
+
+            </div>
             <% if(chatroom) { %>
                 <% for(message of messages){ %>
                     <div class="content">
@@ -35,7 +44,7 @@
                     <% } %>
         </div>
         <form id="form" action="">
-            <input id="msg" autocomplete="off"  placeholder="Type a message"/>
+            <input id="msg" autocomplete="off" placeholder="Type a message" />
             <button type="submit" id="send-button">Send</button>
         </form>
         <%} else {%>
@@ -43,16 +52,14 @@
                 <h1>Welcome, <%=user.firstName%>
                 </h1>
                 <div>
-                    <form action="/chat" method="post" class="room-create">
-                        <div class="form-control">
-                            <input id="room" name="room" autocomplete="off"/>
-                        </div>
+                    <form action="" id="room-create">
+                        <input id="room" name="room" autocomplete="off" />
                         <button type="submit">Create Room</button>
                     </form>
                 </div>
             </div>
             <%}%>
-                
+
     </div>
 </body>
 <script src="/socket.io/socket.io.js"></script>
@@ -68,18 +75,25 @@
     const messages = document.getElementById('messages');
     const form = document.getElementById('form');
     const msg = document.getElementById('msg');
+    const roomList = document.getElementById('room-list');
     const seens = document.getElementsByClassName('seen');
     const contents = document.getElementsByClassName('content');
     const joinRoomButtons = document.getElementsByClassName('join-room');
+    const createRoomForm = document.getElementById('room-create');
+    const roomTitle = document.getElementById('room-title');
 
     const queryString = window.location.search;
     const urlParams = new URLSearchParams(queryString);
     let roomId = urlParams.get('room');
 
     let messageLis = document.getElementsByClassName('message');
-    let msgList = <%- JSON.stringify(messages) %>;
-    const curUser = <%- JSON.stringify(user.username) %>;
-    const allRooms = <%- JSON.stringify(allRooms) %>;
+    let msgList;
+    try{
+        msgList = JSON.parse('<%- JSON.stringify(messages) %>');
+    } catch(e) {}
+
+    const curUser = JSON.parse('<%- JSON.stringify(user.username) %>');
+    const allRooms = JSON.parse('<%- JSON.stringify(newAllRooms) %>');
 
     function formatAMPM(date) {
         var hours = date.getHours();
@@ -87,30 +101,34 @@
         var ampm = hours >= 12 ? 'pm' : 'am';
         hours = hours % 12;
         hours = hours ? hours : 12; // the hour '0' should be '12'
-        minutes = minutes < 10 ? '0'+minutes : minutes;
+        minutes = minutes < 10 ? '0' + minutes : minutes;
         var strTime = hours + ':' + minutes + ' ' + ampm;
         return strTime;
     }
     const timeNow = formatAMPM(new Date);
 
     Array.prototype.forEach.call(allRooms, (allRoom, index) => {
-        if (allRoom._id == roomId) joinRoomButtons[index].className += " active";
-    });
-
-    form.addEventListener('submit', function (e) {
-        e.preventDefault();
-        if (msg.value) {
-            socket.emit('chat message', msg.value, roomId, timeNow);
-            msg.value = '';
+        if (allRoom._id == roomId) {
+            joinRoomButtons[index].className += " active";
+            roomTitle.innerHTML = `${allRoom.name}`;
         }
     });
 
-    socket.emit('join-room', roomId, curUser, joinMsg => {
-        const item = document.createElement('div');
-        item.textContent = joinMsg;
-        messages.appendChild(item);
-        window.scrollTo(0, document.body.scrollHeight);
-    });
+    try{
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (typeof msg.value !== 'undefined') {
+                socket.emit('chat-message', msg.value, roomId, timeNow);
+                msg.value = '';
+            }})
+    } catch (e) {}
+
+    try{
+        createRoomForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            socket.emit('create-room', document.getElementById('room').value);
+        })
+    } catch (e) {}
 
     socket.on('connect', function (msg) {
 
@@ -121,8 +139,10 @@
         Array.prototype.forEach.call(contents, (content, index) => {
             if (msgList[index].user === curUser) content.className += " right";
         });
-
+   
+        socket.emit('join-room', roomId, curUser);
     });
+
 
     socket.on('seen-message', function (msgs) {
         Array.prototype.forEach.call(seens, (seen, index) => {
@@ -132,14 +152,14 @@
     });
 
 
-    socket.on('chat message', function ({ message, username, id, sentTime }) {
+    socket.on('receive-message', function ({ message, username, id, sentTime }) {
         const item = document.createElement('div');
         item.className = "content";
         if (curUser == username) item.className += " right";
 
         item.innerHTML = `<div class='user'> ${username}, ${sentTime} </div><div class='message'> ${message} </div></div> <div class='seen'>`
         messages.appendChild(item);
-        //window.scrollTo(0, item.scrollHeight);
+        window.scrollTo(0, document.body.scrollHeight);
 
         const newMsgs = document.getElementsByClassName('message');
         msgList = [...msgList, { _id: id, user: username, message }]
@@ -166,6 +186,11 @@
         const msgId = msgList[index]._id
         socket.emit('edit-message', msgId, newMsg, roomId);
     }));
+
+    socket.on('receive-room', function({ roomName, roomId }){
+        roomList.innerHTML += `<div class="room-name"><a href="/chat?room=${roomId}"><button class="join-room">${roomName}</button></a></div>`;
+        window.location.href = `/chat?room=${roomId}`;
+    });
 
 </script>
 

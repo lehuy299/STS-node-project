@@ -4,8 +4,8 @@ dotenv.config()
 const Message = require('../model/message.js');
 const User = require('../model/user.js');
 let io;
-const Chatroom = require('../model/chatroom.js');
 const jwt = require('jsonwebtoken');
+const Chatroom = require('../model/chatroom.js');
 
 exports.chatHandler = (server) => {
     io = require('socket.io')(server);
@@ -28,31 +28,18 @@ exports.chatHandler = (server) => {
         });
 
         socket.on("join-room", async (roomId, curUser) => {
-            //const joinedRoom = await Chatroom.findOne({ _id: roomId });
-            //let roomId;
-            // if (!joinedRoom) {
-            //     const newRoom = await new Chatroom({ name: room });
-            //     roomId = newRoom._id;
-            //     await newRoom.save();
-
-            //     socket.join(newRoom.name);
-            // } else {
-            //     roomId = joinedRoom._id;
-            //}
             socket.join(roomId);
-            
             await Message.updateMany({ user: { $ne: socket.username }, chatroom: roomId }, { $addToSet: { seenList: [curUser] } });
             const message = await Message.find({ chatroom: roomId });
-            //console.log("222", message.seenList);
+            
             io.to(roomId).emit('seen-message', { message });
         });
 
-        socket.on('chat message', async (msg, roomId, timeNow) => {
+        socket.on('chat-message', async (msg, roomId, timeNow) => {
             const user = await User.findOne({ username: socket.username });
-            //const roomId = (await Chatroom.findOne({ name: room }))._id;
             const newMessage = await new Message({ user: user.username, message: msg, chatroom: roomId, sentTime: timeNow });
-            io.to(roomId).emit('chat message', { message: msg, username: user.username, id: newMessage._id, sentTime: timeNow });
             await newMessage.save();
+            io.to(roomId).emit('receive-message', { message: msg, username: user.username, id: newMessage._id, sentTime: timeNow });
         });
 
         socket.on('edit-message', async (msgId, newMsg, roomId) => {
@@ -61,5 +48,25 @@ exports.chatHandler = (server) => {
             const message = await Message.find({ _id: msgId });
             io.to(roomId).emit('edit-message', { message });
         });
+
+        socket.on('create-room', async (roomName) => {
+            let newRoom;
+            let roomNameSplit = roomName.split('--with--');
+            if (roomNameSplit.length > 1){
+                let usernames = [...new Set(roomNameSplit)].sort((a, b) => (a < b ? -1 : 1));
+                roomName = `${usernames[0]}--with--${usernames[1]}`;
+                newRoom = await Chatroom.findOne({ name: roomName });
+                    if(!newRoom){ 
+                        newRoom = await new Chatroom({ name: roomName, authUsers: usernames });
+                        await newRoom.save();
+                    }
+            }
+            else {
+                newRoom = await new Chatroom({ name: roomName });
+                await newRoom.save();
+            }
+            const roomId = newRoom._id;
+            io.emit('receive-room', { roomName, roomId });
+        })
     });
 }

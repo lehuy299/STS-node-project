@@ -5,6 +5,4 @@ const { authorization } = require('../middleware/auth');
 
 chatRouter.get('/chat', authorization, chatHandler.getChatroom);
 
-chatRouter.post('/chat', authorization, chatHandler.createRoom);
-
 module.exports = chatRouter;

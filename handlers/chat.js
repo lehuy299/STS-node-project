@@ -5,27 +5,22 @@ const User = require('../model/user.js');
 exports.getChatroom = async (req, res) => {
     const username = req.username;
     let chatroom = req.query.room || "";
-    // let split = chatroom.split('--with--');
-    // if (split.length > 1){
-    //     if(!split.includes(username)) return res.sendStatus(403);
-    //     let unique = [...new Set(split)].sort((a, b) => (a < b ? -1 : 1));
-    //     chatroom = `${unique[0]}--with--${unique[1]}`;
-    // }
+
     const user = await User.findOne({ username: username });
     let messages;
     if (chatroom) {
         const room = await Chatroom.findById({ _id: chatroom });
+        if(room.authUsers.length > 0 && !room.authUsers.includes(username)) return res.sendStatus(403);
         messages = await Message.find({ chatroom: room });
     }
-
     const allRooms = await Chatroom.find({});
+    const newAllRooms = [];
+    allRooms.forEach(room => {
+        if((room.authUsers.length != 0 && room.authUsers.includes(username)) || room.authUsers.length == 0) {
+            newAllRooms.push(room);
+        }
+    });
 
-    res.render('pages/chatroom', { user, messages, allRooms, chatroom });
+    res.render('pages/chatroom', { user, messages, newAllRooms, chatroom });
 };
 
-exports.createRoom = async(req, res) => {
-    const roomName = req.body.room || "";
-    const newRoom = await new Chatroom({ name: roomName });
-    await newRoom.save();
-    res.redirect(`/chat?room=${newRoom._id}`);
-};
