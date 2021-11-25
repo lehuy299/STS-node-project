@@ -21,6 +21,12 @@ exports.getChatroom = async (req, res) => {
         }
     });
 
-    res.render('pages/chatroom', { user, messages, newAllRooms, chatroom });
+    res.render('pages/chat/chatroom', { user, messages, newAllRooms, chatroom });
 };
 
+exports.createRoom = async(req, res) => {
+    const roomName = req.body.room || "";
+    const newRoom = await new Chatroom({ name: roomName });
+    await newRoom.save();
+    res.redirect(`/chat?room=${newRoom._id}`);
+};

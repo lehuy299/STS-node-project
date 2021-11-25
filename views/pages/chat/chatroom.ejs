@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="/pages/css/chatroom.css" rel="stylesheet" type="text/css">
+    <title>Socket.IO chat</title>
+
+</head>
+
+<body>
+    <div id="chat-app">
+        <div id="room-list">
+            <a href="/chat">
+                <%=user.firstName%>
+                    <%=user.lastName%>
+            </a>
+            <% for(room of newAllRooms){ 
+                let roomNameSplit = room.name.split('--with--'); 
+                if (roomNameSplit.length > 1){
+                let usernames = [...new Set(roomNameSplit)].sort((a, b) => (a < b ? -1 : 1));
+                    usernames[0] == user.username ? room.name = usernames[1] : room.name = usernames[0]
+                    
+                } %>
+                    <div class="room-name"><a href="/chat?room=<%= room._id %>">
+                        <button class="join-room">
+                                <%= room.name %>
+                        </button></a>
+                    </div>
+            <% } %>
+        </div>
+        <div id="messages">
+            <div id="room-title">
+
+            </div>
+            <% if(chatroom) { %>
+                <% for(message of messages){ %>
+                    <div class="content">
+                        <div class="user">
+                            <%= message.user %>, <%= message.sentTime %>
+                        </div>
+                        <div class="message">
+                            <%= message.message %>
+                        </div>
+                        <div class="seen"></div>
+                    </div>
+                    <% } %>
+        </div>
+        <form id="form" action="">
+            <input id="msg" autocomplete="off" placeholder="Type a message" />
+            <button type="submit" id="send-button">Send</button>
+        </form>
+        <%} else {%>
+            <div id="welcome">
+                <h1>Welcome, <%=user.firstName%>
+                </h1>
+                <div>
+                    <form action="" id="room-create">
+                        <input id="room" name="room" autocomplete="off" />
+                        <button type="submit">Create Room</button>
+                    </form>
+                </div>
+            </div>
+            <%}%>
+
+    </div>
+</body>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+    const getCookieValue = (name) => (
+        document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
+    )
+    const token = getCookieValue("token");
+    const socket = io("http://localhost:8080", {
+        query: { token: token },
+    });
+
+    const messages = document.getElementById('messages');
+    const form = document.getElementById('form');
+    const msg = document.getElementById('msg');
+    const roomList = document.getElementById('room-list');
+    const seens = document.getElementsByClassName('seen');
+    const contents = document.getElementsByClassName('content');
+    const joinRoomButtons = document.getElementsByClassName('join-room');
+    const createRoomForm = document.getElementById('room-create');
+    const roomTitle = document.getElementById('room-title');
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    let roomId = urlParams.get('room');
+
+    let messageLis = document.getElementsByClassName('message');
+    let msgList;
+    try{
+        msgList = JSON.parse('<%- JSON.stringify(messages) %>');
+    } catch(e) {}
+
+    const curUser = JSON.parse('<%- JSON.stringify(user.username) %>');
+    const allRooms = JSON.parse('<%- JSON.stringify(newAllRooms) %>');
+
+    function formatAMPM(date) {
+        var hours = date.getHours();
+        var minutes = date.getMinutes();
+        var ampm = hours >= 12 ? 'pm' : 'am';
+        hours = hours % 12;
+        hours = hours ? hours : 12; // the hour '0' should be '12'
+        minutes = minutes < 10 ? '0' + minutes : minutes;
+        var strTime = hours + ':' + minutes + ' ' + ampm;
+        return strTime;
+    }
+    const timeNow = formatAMPM(new Date);
+
+    Array.prototype.forEach.call(allRooms, (allRoom, index) => {
+        if (allRoom._id == roomId) {
+            joinRoomButtons[index].className += " active";
+            roomTitle.innerHTML = `${allRoom.name}`;
+        }
+    });
+
+    try{
+        form.addEventListener('submit', function (e) {
+            e.preventDefault();
+            if (typeof msg.value !== 'undefined') {
+                socket.emit('chat-message', msg.value, roomId, timeNow);
+                msg.value = '';
+            }})
+    } catch (e) {}
+
+    try{
+        createRoomForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            socket.emit('create-room', document.getElementById('room').value);
+        })
+    } catch (e) {}
+
+    socket.on('connect', function (msg) {
+
+        Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('dblclick', function () {
+            if (msgList[index].user == curUser) messageLi.setAttribute("contenteditable", "true");
+        }));
+
+        Array.prototype.forEach.call(contents, (content, index) => {
+            if (msgList[index].user === curUser) content.className += " right";
+        });
+   
+        socket.emit('join-room', roomId, curUser);
+    });
+
+
+    socket.on('seen-message', function (msgs) {
+        Array.prototype.forEach.call(seens, (seen, index) => {
+            seen.innerHTML = "Seen By: ";
+            seen.innerHTML += msgs.message[index].seenList || " ";
+        });
+    });
+
+
+    socket.on('receive-message', function ({ message, username, id, sentTime }) {
+        const item = document.createElement('div');
+        item.className = "content";
+        if (curUser == username) item.className += " right";
+
+        item.innerHTML = `<div class='user'> ${username}, ${sentTime} </div><div class='message'> ${message} </div></div> <div class='seen'>`
+        messages.appendChild(item);
+        item.scrollIntoView();
+
+        const newMsgs = document.getElementsByClassName('message');
+        msgList = [...msgList, { _id: id, user: username, message }]
+
+        Array.prototype.forEach.call(newMsgs, (newMsg, index) => newMsg.addEventListener('dblclick', function () {
+            if (msgList[index].user == curUser) newMsg.setAttribute("contenteditable", "true");
+        }));
+
+        Array.prototype.forEach.call(newMsgs, (msg, index) => msg.addEventListener('input', function () {
+            const newMsg = msg.textContent;
+            const msgId = msgList[index]._id
+            socket.emit('edit-message', msgId, newMsg, roomId);
+        }));
+    });
+
+    socket.on('edit-message', function (msg) {
+        const index = msgList.findIndex(mess => mess._id == msg.message[0]._id);
+        messageLis[index].textContent = msg.message[0].message;
+    });
+
+    Array.prototype.forEach.call(messageLis, (messageLi, index) => messageLi.addEventListener('input', function () {
+        const newMsg = messageLi.textContent;
+        const msgId = msgList[index]._id
+        socket.emit('edit-message', msgId, newMsg, roomId);
+    }));
+
+    socket.on('receive-room', function({ roomName, roomId }){
+        roomList.innerHTML += `<div class="room-name"><a href="/chat?room=${roomId}"><button class="join-room">${roomName}</button></a></div>`;
+        window.location.href = `/chat?room=${roomId}`;
+    });
+
+</script>
+
+</html>

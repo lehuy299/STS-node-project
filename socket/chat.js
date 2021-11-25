@@ -21,10 +21,10 @@ exports.chatHandler = (server) => {
     });
 
     io.on('connection', async (socket) => {
-        console.log('A user connected: ' + socket.username);
+        //console.log('A user connected: ' + socket.username);
 
         socket.on('disconnect', () => {
-            console.log('A user disconnected: ' + socket.username);
+            //console.log('A user disconnected: ' + socket.username);
         });
 
         socket.on("join-room", async (roomId, curUser) => {

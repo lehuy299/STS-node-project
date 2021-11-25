@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../../partials/head'); %>
+</head>
+
+<body class="container">
+    <h1>Edit Profile</h1>
+    <main>
+        <% if (messages.validateErr) { %>
+            <div class="alert-danger">
+                <%= messages.validateErr %>
+            </div>
+            <% } %>
+        <form name="form1" action="/api/user/update/<%= user.username %>" method="POST" enctype="multipart/form-data">
+            <div class="form-group">
+                <label>Email*</label>
+                <input type="text" class="form-control" id="email" placeholder="john@smith.com" name="email" value="<%= user.email %>" required> 
+            </div>
+            <div class="form-group">
+                <label>Upload profile picture</label>
+                <input type="file" name="avatar" />
+            </div>
+            <div class="form-group">
+                <label>First name*</label>
+                <input class="form-control" type="text" placeholder="First name" name="firstName" value="<%= user.firstName %>" required> 
+            </div>
+            <div class="form-group">
+                <label>Last name*</label>
+                <input class="form-control" type="text" placeholder="Last name" name="lastName" value="<%= user.lastName %>" required>
+            </div>
+            <div class="form-group">
+                <label>Date of birth*</label>
+                <input class="form-control" type="date" placeholder="Date of birth" name="dateOfBirth" value="<%= user.dateOfBirth %>" required>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+    </main>
+
+</body>
+
+</html>

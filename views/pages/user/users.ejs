@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../../partials/head'); %>
+</head>
+
+<body class="container">
+
+    <main>
+        <div class="jumbotron">
+
+            <% if (messages.delUsrMsg) { %>
+                <div class="alert alert-info">
+                    <%= messages.delUsrMsg %>
+                </div>
+                <% } %>
+                    <h1>User List</h1>
+
+                    <form class="search" action="/users" method="GET">
+                        <input type="text" value="<%=searchValueStr%>" placeholder="Search" name="searchValue" aria-label="Search">
+                        <h5>Sort By</h5>
+                        <% 
+                            const usernameCheck = "checked";
+                            const firstNameCheck = mySort.firstName ? "checked" : "";
+                            const lastNameCheck = mySort.lastName ? "checked" : "";
+                            const timestampCheck = mySort.timestamp ? "checked" : "";
+                            const ascCheck = "checked";                          
+                            const descCheck = mySort[Object.keys(mySort)[0]] === -1 ? "checked" : "";
+                        %>
+                        <div>
+                            <label>Username</label>
+                            <input type="radio" name="sort" value="username" <%= usernameCheck %> >
+                            <label>First Name</label>
+                            <input type="radio" name="sort" value="firstName" <%= firstNameCheck %> >
+                            <label>Last Name</label>
+                            <input type="radio" name="sort" value="lastName" <%= lastNameCheck %> >
+                            <label>Joined Date</label>
+                            <input type="radio" name="sort" value="timestamp" <%= timestampCheck %> >
+                        </div>
+                        <div>
+                            <label>Asc</label>
+                            <input type="radio" name="order" value="asc" <%= ascCheck %> >
+                            <label>Desc</label>
+                            <input type="radio" name="order" value="desc" <%= descCheck %> >
+                        </div>
+                        <button> Filter </button>
+                    </form>
+
+                    <% for (user of users){ %>
+                        <h2>Profile</h2>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>Username: </strong>
+                                <%= user.username %>
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>Avatar: </strong>
+                                <img src="/api/user/images/<%= user.avatarUrl %>" alt="Avatar" height="100">
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>Email: </strong>
+                                <%= user.email %>
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>First name: </strong>
+                                <%= user.firstName %>
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>Last name: </strong>
+                                <%= user.lastName %>
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>Date of birth: </strong>
+                                <%= user.dateOfBirth %>
+                            </li>
+                            <li class="list-group-item">
+                                <i class="fas fa-envelope"></i> <strong>Date joined: </strong>
+                                <%= user.timestamp %>
+                            </li>
+                        </ul>
+                        <a href="/api/user/delete/<%= user.username %>">
+                            <button>Delete</button>
+                        </a>
+                        <% } %>
+        </div>
+        <a href="/api/user/logout">
+            <button>Logout</button>
+        </a>
+    </main>
+
+</body>
+
+</html>

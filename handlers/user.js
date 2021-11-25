@@ -16,31 +16,31 @@ const uploadToS3 = async (file) => {
 };
 
 exports.getRegister = (req, res) => {
-  res.render('pages/register');
+  res.render('pages/user/register');
 };
 
 exports.getLogin = (req, res) => {
-  res.render('pages/login');
+  res.render('pages/user/login');
 };
 
 exports.getDashboard = async (req, res) => {
   const users = await User.find({});
-  res.render('pages/dashboard', {curUsername: req.username, users: users });
+  res.render('pages/user/dashboard', {curUsername: req.username, users: users });
 };
 
 exports.getProfile = (req, res) => {
-  res.render('pages/profile');
+  res.render('pages/user/profile');
 };
 
 exports.getEdit = async (req, res) => {
   const { username } = req.params;
   const user = await User.findOne({ username }).lean();
 
-  res.render('pages/edit', { user });
+  res.render('pages/user/edit', { user });
 };
 
 exports.home = (req, res) => {
-  res.render('pages/home');
+  res.render('pages/user/home');
 };
 
 exports.getImage = (req, res) => {
@@ -93,7 +93,7 @@ exports.register = async (req, res) => {
   if (isDuplicated) {
     req.flash('userDupErr', 'Username has been created');
     const user = { username, email, firstName, lastName, dateOfBirth } || {};
-    return res.render('pages/register', { user });
+    return res.render('pages/user/register', { user });
   }
   const timestamp = Date.now();
 
@@ -158,7 +158,7 @@ exports.profile = async (req, res) => {
 
   const user = await User.findOne({ username }).lean();
 
-  return res.render('pages/profile', { user });
+  return res.render('pages/user/profile', { user });
 };
 
 exports.logout = (req, res) => {
@@ -181,7 +181,7 @@ exports.getUserList = async (req, res) => {
 
   let users = await User.find({ $or: [ { username: searchValue }, { firstName: searchValue }, { lastName: searchValue } ], role: "user" }).sort(mySort);
 
-  res.render('pages/users', { users, searchValueStr, mySort });
+  res.render('pages/user/users', { users, searchValueStr, mySort });
 };
 
 exports.deleteUser = async (req, res) => {

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <%- include('../../partials/head'); %>
+</head>
+
+<body class="container">
+    <h1>Sign Up</h1>
+    <main>
+        <% if (messages.validateErr) { %>
+            <div class="alert-danger">
+                <%= messages.validateErr %>
+            </div>
+            <% } %>
+                <form name="form1" action="/register" method="POST" enctype="multipart/form-data">
+                    <div class="form-group">
+                        <label>Username*</label>
+                        <% let username="" ; if (locals.user) { username=user.username; } %>
+                            <input class="form-control" type="text" placeholder="Username" name="username"
+                                value="<%= username %>" required>
+                            <% if (messages.userDupErr) { %>
+                                <div class="alert-danger">
+                                    <%= messages.userDupErr %>
+                                </div>
+                                <% } %>
+                    </div>
+                    <div class="form-group">
+                        <label>Upload profile picture</label>
+                        <input type="file" name="avatar" />
+                    </div>
+                    <div class="form-group">
+                        <label>Password*</label>
+                        <input type="password" class="form-control" id="exampleInputPassword1" placeholder="Password"
+                            name="password" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Email*</label>
+                        <% let email="" ; if (locals.user) { email=user.email; } %>
+                        <input type="text" class="form-control" id="email" placeholder="E-mail" name="email" value="<%= email %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>First name*</label>
+                        <% let firstName="" ; if (locals.user) { firstName=user.firstName; } %>
+                        <input class="form-control" type="text" placeholder="First name" name="firstName" value="<%= firstName %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last name*</label>
+                        <% let lastName="" ; if (locals.user) { lastName=user.lastName; } %>
+                        <input class="form-control" type="text" placeholder="Last name" name="lastName" value="<%= lastName %>" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Date of birth*</label>
+                        <% let dateOfBirth="" ; if (locals.user) { dateOfBirth=user.dateOfBirth; } %>
+                        <input class="form-control" type="date" placeholder="Date of birth" name="dateOfBirth" value="<%= dateOfBirth %>" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit</button>
+                </form>
+
+                <div class="mt-2 text-center">
+                    Have an account?
+                    <a href="/login">Login</a>
+                </div>
+    </main>
+
+</body>
+
+</html>
