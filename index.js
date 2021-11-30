@@ -6,6 +6,7 @@ const userRouter = require('./routers/user.js');
 const chatRouter = require('./routers/chat.js');
 const app = express()
 const mongoConnectionString = process.env.MONGO_DB_CONNECTION_STRING || 'mongodb://localhost:27017/login-app-db';
+const mongoUrl = process.env.MONGO_DB_URL;
 const { API_PORT } = process.env;
 const port = process.env.PORT || API_PORT;
 const cookieParser = require("cookie-parser");
@@ -40,7 +41,7 @@ logger.log({
 logger.info('Hello, Winston!');
 
 mongoose
-	.connect(mongoConnectionString, {})
+	.connect(mongoUrl, {})
 	.then(() => console.log("Successfully connected to database"))
 	.catch(err => {
 		errorHandler.databaseConnectionFailed(err);

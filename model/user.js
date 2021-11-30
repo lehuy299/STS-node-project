@@ -9,7 +9,7 @@ const UserSchema = new mongoose.Schema(
     firstName: String,
     lastName: String,
     dateOfBirth: String,
-    role: { type: String, default: 'User' },
+    role: { type: String, default: 'user' },
     timestamp: Date,
   },
   { collection: 'users' },

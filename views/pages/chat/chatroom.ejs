@@ -70,7 +70,7 @@
         document.cookie.match('(^|;)\\s*' + name + '\\s*=\\s*([^;]+)')?.pop() || ''
     )
     const token = getCookieValue("token");
-    const socket = io("http://localhost:8080", {
+    const socket = io({
         query: { token: token },
     });
 
